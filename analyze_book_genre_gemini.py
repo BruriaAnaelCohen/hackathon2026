@@ -7,6 +7,8 @@ AI Model: Google Gemini 3 Flash (Free)
 
 import pyodbc
 from google import genai
+import os
+from dotenv import load_dotenv
 
 # Database connection
 SERVER = '.' 
@@ -105,9 +107,16 @@ def process_books():
     print(f"Using AI model: {MODEL_NAME}")
     print("="*80)
     
+    load_dotenv()
+    api_key = os.getenv("GOOGLE_API_KEY")
+    
+    if not api_key:
+        print("Error: GOOGLE_API_KEY not found in .env file!")
+        return
+
     # Initialize Gemini client
     try:
-        client = genai.Client(api_key="AIzaSyCx0fzxeMis7ao4ke-5DKxzJhT66v5J3-w")
+        client = genai.Client(api_key=api_key)
         print("Gemini client initialized successfully!")
     except Exception as e:
         print(f"Failed to initialize Gemini client: {e}")
