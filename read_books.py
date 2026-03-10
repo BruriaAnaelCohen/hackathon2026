@@ -6,7 +6,7 @@ Table: Books
 
 import pyodbc
 
-SERVER = 'DDCLaptop'  # Or your server name like 'DESKTOP-XXXX\SQLEXPRESS' or '(local)'
+SERVER = '.' 
 DATABASE = 'HACKATHON2026'
 
 conn_string = f'DRIVER={{SQL Server}};SERVER={SERVER};DATABASE={DATABASE};Trusted_Connection=yes;'
@@ -123,7 +123,6 @@ def main():
             
         finally:
             conn.close()
-            print("\nConnection closed.")
     else:
         print("Please check your connection settings.")
 
