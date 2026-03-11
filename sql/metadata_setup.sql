@@ -42,6 +42,7 @@ BEGIN
         TaskDescription NVARCHAR(500) NOT NULL,
         SourceColumn NVARCHAR(100) NOT NULL,
         SourceColumnDescription NVARCHAR(255) NULL,
+        DestColumn NVARCHAR(100) NULL, -- Destination column for results
         AdditionalColumns NVARCHAR(MAX) NULL, -- JSON array of column names
         ExpectedOutput NVARCHAR(500) NOT NULL,
         MaxCategories INT NULL, -- Limit for categorization
@@ -53,6 +54,13 @@ END
 ELSE
 BEGIN
     PRINT 'Table AI_Processes already exists.';
+END
+
+-- Add DestColumn if it doesn't exist (for existing tables)
+IF NOT EXISTS (SELECT * FROM sys.columns WHERE object_id = OBJECT_ID('AI_Processes') AND name = 'DestColumn')
+BEGIN
+    ALTER TABLE AI_Processes ADD DestColumn NVARCHAR(100) NULL;
+    PRINT 'Column DestColumn added to AI_Processes.';
 END
 GO
 

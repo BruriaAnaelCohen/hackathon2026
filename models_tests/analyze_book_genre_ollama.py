@@ -18,7 +18,13 @@ conn_string = f'DRIVER={{SQL Server}};SERVER={SERVER};DATABASE={DATABASE};Truste
 
 # Ollama settings
 OLLAMA_BASE_URL = "http://localhost:11434"
-MODEL_NAME = "llama3"
+
+# Available models - uncomment the one you want to use:
+# MODEL_NAME = "llama3"          # Fast, good quality
+# MODEL_NAME = "mistral"        # Smaller, faster
+# MODEL_NAME = "phi3"           # Very small, fastest
+# MODEL_NAME = "llama2"         # Older version
+MODEL_NAME = "llama3"  # Currently using
 
 
 def connect_to_database():
@@ -56,6 +62,19 @@ def check_ollama():
             return True
     except Exception as e:
         print(f"Error getting models: {e}")
+        return False
+
+
+def check_ollama_llama3():
+    """Simple check - just verify server is running, use llama3 directly"""
+    print(f"Checking Ollama for {MODEL_NAME}...")
+    try:
+        req = urllib.request.Request(f"{OLLAMA_BASE_URL}/")
+        with urllib.request.urlopen(req, timeout=10) as response:
+            print(f"Ollama server is running: {response.status}")
+            return True
+    except Exception as e:
+        print(f"Cannot connect to Ollama: {e}")
         return False
 
 
@@ -152,7 +171,7 @@ def process_books():
     print("="*80)
     
     # Check if Ollama is running
-    if not check_ollama():
+    if not check_ollama_llama3():
         return
     
     # Connect to database
