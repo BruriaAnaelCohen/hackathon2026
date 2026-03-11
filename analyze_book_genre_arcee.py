@@ -1,12 +1,14 @@
 """
-Python script to analyze books using Google Gemini AI and update genre in database
+Python script to analyze books using Arcee AI and update genre in database
 Database: HACKATHON2026
 Table: Books
-AI Model: Google Gemini 3 Flash (Free)
+AI Model: Arcee AI (using API)
 """
 
 import pyodbc
-from google import genai
+import urllib.request
+import urllib.parse
+import json
 import os
 from dotenv import load_dotenv
 
@@ -15,8 +17,9 @@ SERVER = '.'
 DATABASE = 'HACKATHON2026'
 conn_string = f'DRIVER={{SQL Server}};SERVER={SERVER};DATABASE={DATABASE};Trusted_Connection=yes;'
 
-# Google Gemini settings
-MODEL_NAME = "gemini-3-flash-preview"
+# Arcee AI settings
+MODEL_NAME = "trinity-mini"
+ARCEE_API_URL = "https://api.arcee.ai/v1/chat/completions"
 
 
 def connect_to_database():
@@ -30,7 +33,7 @@ def connect_to_database():
         return None
 
 
-def get_book_genre(client, book_name, author_name=None, summary=None):
+def get_book_genre(api_key, book_name, author_name=None, summary=None):
     """Use AI to determine the genre of a book"""
     
     # Build context for the AI
@@ -42,28 +45,55 @@ def get_book_genre(client, book_name, author_name=None, summary=None):
     
     prompt = f"""{context}
 
-Basond ed only on the book title above (and author/summary if provided), determine the genre/category of this book.
-Respwith ONLY a single word or short phrase for the genre (e.g., Fiction, Science Fiction, Mystery, Romance, Biography, History, Fantasy, Self-Help, etc.).
+Based only on the book title above (and author/summary if provided), determine the genre/category of this book.
+Respond with ONLY a single word or short phrase for the genre (e.g., Fiction, Science Fiction, Mystery, Romance, Biography, History, Fantasy, Self-Help, etc.).
 Do not provide any explanation or additional text. Just the genre name."""
 
     try:
-        response = client.models.generate_content(
-            model=MODEL_NAME,
-            contents=prompt,
+        # Prepare request for Arcee AI
+        data = {
+            "model": MODEL_NAME,
+            "messages": [
+                {"role": "user", "content": prompt}
+            ],
+            "max_tokens": 50,
+            "temperature": 0.3
+        }
+        
+        data_json = json.dumps(data).encode('utf-8')
+        
+        req = urllib.request.Request(
+            ARCEE_API_URL,
+            data=data_json,
+            headers={
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
         )
         
-        genre = response.text.strip() if response.text else None
-        
-        if genre:
-            # Clean up the response - take only the first line
-            genre = genre.split('\n')[0].strip()
-            # Remove any quotes or special characters
-            genre = genre.strip('"\'')
-        
-        return genre
-        
+        with urllib.request.urlopen(req, timeout=60) as response:
+            result = json.loads(response.read().decode('utf-8'))
+            
+            if 'choices' in result and len(result['choices']) > 0:
+                genre = result['choices'][0]['message']['content'].strip()
+                
+                if genre:
+                    # Clean up the response - take only the first line
+                    genre = genre.split('\n')[0].strip()
+                    # Remove any quotes or special characters
+                    genre = genre.strip('"\'')
+                
+                return genre
+            else:
+                print(f"Unexpected response format: {result}")
+                return None
+            
+    except urllib.error.HTTPError as e:
+        error_body = e.read().decode('utf-8')
+        print(f"HTTP Error calling Arcee AI: {e.code} - {error_body}")
+        return None
     except Exception as e:
-        print(f"Error calling Gemini: {e}")
+        print(f"Error calling Arcee AI: {e}")
         return None
 
 
@@ -107,21 +137,15 @@ def process_books():
     print(f"Using AI model: {MODEL_NAME}")
     print("="*80)
     
+    # Load environment variables
     load_dotenv()
-    api_key = os.getenv("GOOGLE_API_KEY")
+    api_key = os.getenv("ARCEE_API_KEY")
     
     if not api_key:
-        print("Error: GOOGLE_API_KEY not found in .env file!")
+        print("Error: ARCEE_API_KEY not found in .env file!")
         return
-
-    # Initialize Gemini client
-    try:
-        client = genai.Client(api_key=api_key)
-        print("Gemini client initialized successfully!")
-    except Exception as e:
-        print(f"Failed to initialize Gemini client: {e}")
-        print("Make sure you have configured your Google API key.")
-        return
+    
+    print("Arcee AI client configured successfully!")
     
     # Connect to database
     conn = connect_to_database()
@@ -151,7 +175,7 @@ def process_books():
             print(f"   Author: {author_name}")
             
             # Get genre from AI
-            genre = get_book_genre(client, book_name, author_name, summary)
+            genre = get_book_genre(api_key, book_name, author_name, summary)
             
             if genre:
                 print(f"   → Genre: {genre}")

@@ -2,13 +2,15 @@
 Python script to analyze books using Google Gemini AI and update genre in database
 Database: HACKATHON2026
 Table: Books
-AI Model: Google Gemini 3 Flash (Free)
+AI Model: Google Gemini 3 Flash
+Processes books in batches to ease the model
 """
 
 import pyodbc
 from google import genai
 import os
 from dotenv import load_dotenv
+import time
 
 # Database connection
 SERVER = '.' 
@@ -16,7 +18,11 @@ DATABASE = 'HACKATHON2026'
 conn_string = f'DRIVER={{SQL Server}};SERVER={SERVER};DATABASE={DATABASE};Trusted_Connection=yes;'
 
 # Google Gemini settings
-MODEL_NAME = "gemini-3-flash-preview"
+MODEL_NAME = "gemini-2.0-flash"
+
+# Batch settings
+BATCH_SIZE = 1  # Number of books to process before pausing
+PAUSE_SECONDS = 10  # Seconds to wait between batches
 
 
 def connect_to_database():
@@ -42,8 +48,8 @@ def get_book_genre(client, book_name, author_name=None, summary=None):
     
     prompt = f"""{context}
 
-Basond ed only on the book title above (and author/summary if provided), determine the genre/category of this book.
-Respwith ONLY a single word or short phrase for the genre (e.g., Fiction, Science Fiction, Mystery, Romance, Biography, History, Fantasy, Self-Help, etc.).
+Based only on the book title above (and author/summary if provided), determine the genre/category of this book.
+Respond with ONLY a single word or short phrase for the genre (e.g., Fiction, Science Fiction, Mystery, Romance, Biography, History, Fantasy, Self-Help, etc.).
 Do not provide any explanation or additional text. Just the genre name."""
 
     try:
@@ -100,20 +106,22 @@ def update_book_genre(conn, book_id, genre):
 
 
 def process_books():
-    """Main function to process all books without genre"""
+    """Main function to process all books without genre in batches"""
     
     print("="*80)
-    print("AI BOOK GENRE ANALYZER")
+    print("AI BOOK GENRE ANALYZER (Batch Mode)")
     print(f"Using AI model: {MODEL_NAME}")
+    print(f"Batch size: {BATCH_SIZE}, Pause between batches: {PAUSE_SECONDS}s")
     print("="*80)
     
+    # Load environment variables
     load_dotenv()
     api_key = os.getenv("GOOGLE_API_KEY")
     
     if not api_key:
         print("Error: GOOGLE_API_KEY not found in .env file!")
         return
-
+    
     # Initialize Gemini client
     try:
         client = genai.Client(api_key=api_key)
@@ -138,32 +146,50 @@ def process_books():
             print("\nAll books already have genres assigned!")
             return
         
-        print(f"\nFound {len(books)} book(s) without genre.\n")
+        total_books = len(books)
+        print(f"\nFound {total_books} book(s) without genre.\n")
         
-        # Process each book
-        for book in books:
-            book_id = book.BookID
-            book_name = book.BookName
-            author_name = book.AuthorName
-            summary = book.ShortSummary
+        # Process books in batches
+        processed = 0
+        batch_num = 1
+        
+        for i in range(0, total_books, BATCH_SIZE):
+            batch = books[i:i + BATCH_SIZE]
             
-            print(f"Processing: {book_name}")
-            print(f"   Author: {author_name}")
+            print(f"\n--- Batch {batch_num} ---")
+            print(f"Processing books {i+1} to {min(i+BATCH_SIZE, total_books)} of {total_books}")
             
-            # Get genre from AI
-            genre = get_book_genre(client, book_name, author_name, summary)
-            
-            if genre:
-                print(f"   → Genre: {genre}")
+            # Process each book in the batch
+            for book in batch:
+                book_id = book.BookID
+                book_name = book.BookName
+                author_name = book.AuthorName
+                summary = book.ShortSummary
                 
-                # Update database
-                update_book_genre(conn, book_id, genre)
-                print(f"   ✓ Updated in database\n")
-            else:
-                print(f"   ✗ Failed to get genre from AI\n")
+                print(f"  Processing: {book_name}")
+                
+                # Get genre from AI
+                genre = get_book_genre(client, book_name, author_name, summary)
+                
+                if genre:
+                    print(f"    → Genre: {genre}")
+                    
+                    # Update database
+                    update_book_genre(conn, book_id, genre)
+                    print(f"    ✓ Updated in database")
+                else:
+                    print(f"    ✗ Failed to get genre from AI")
+                
+                processed += 1
+            
+            # Pause between batches (except after the last batch)
+            if i + BATCH_SIZE < total_books:
+                print(f"\nPausing for {PAUSE_SECONDS} seconds...")
+                time.sleep(PAUSE_SECONDS)
+                batch_num += 1
         
-        print("="*80)
-        print("Processing complete!")
+        print("\n" + "="*80)
+        print(f"Processing complete! Processed {processed} book(s).")
         print("="*80)
         
     except Exception as e:
