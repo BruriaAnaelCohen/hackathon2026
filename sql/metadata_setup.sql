@@ -44,7 +44,6 @@ BEGIN
         SourceColumnDescription NVARCHAR(255) NULL,
         DestColumn NVARCHAR(100) NULL, -- Destination column for results
         AdditionalColumns NVARCHAR(MAX) NULL, -- JSON array of column names
-        ExpectedOutput NVARCHAR(500) NOT NULL,
         MaxCategories INT NULL, -- Limit for categorization
         CreatedDate DATETIME DEFAULT GETDATE(),
         FOREIGN KEY (ProjectID) REFERENCES AI_Projects(ProjectID) ON DELETE CASCADE

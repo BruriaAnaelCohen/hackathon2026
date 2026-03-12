@@ -96,7 +96,7 @@ def save_project_to_db(server_name, database_name, project_name, description, ta
 
 def save_process_to_db(server_name, database_name, project_id, process_type, task_description, 
                        source_column, source_column_description, dest_column_name,
-                       additional_columns, expected_output, max_categories):
+                       additional_columns, max_categories):
     """Save process to AI_Processes table"""
     conn = connect_to_database(server_name, database_name)
     if not conn:
@@ -109,11 +109,11 @@ def save_process_to_db(server_name, database_name, project_id, process_type, tas
     # First insert the process
     cursor.execute("""
         INSERT INTO AI_Processes (ProjectID, ProcessType, TaskDescription, SourceColumn, 
-                                  SourceColumnDescription, DestColumn, AdditionalColumns, ExpectedOutput, 
+                                  SourceColumnDescription, DestColumn, AdditionalColumns, 
                                   MaxCategories, CreatedDate)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, GETDATE())
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, GETDATE())
     """, (project_id, process_type, task_description, source_column, 
-          source_column_description, dest_column_name, additional_cols_json, expected_output, max_categories))
+          source_column_description, dest_column_name, additional_cols_json, max_categories))
     
     # Then get the ID
     cursor.execute("SELECT @@IDENTITY as ProcessID")
@@ -133,6 +133,12 @@ def save_categories_to_db(server_name, database_name, process_id, categories):
         return False
     
     cursor = conn.cursor()
+
+    cursor.execute("""
+    DELETE FROM AI_Categories
+    WHERE ProcessID = ?
+    """, process_id)
+
     for category in categories:
         cursor.execute("INSERT INTO AI_Categories (ProcessID, CategoryName) VALUES (?, ?)", (process_id, category))
     
@@ -164,7 +170,7 @@ def get_processes(server_name, database_name, project_id):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT ProcessID, ProcessType, TaskDescription, SourceColumn, SourceColumnDescription,
-               DestColumn, AdditionalColumns, ExpectedOutput, MaxCategories
+               DestColumn, AdditionalColumns, MaxCategories
         FROM AI_Processes 
         WHERE ProjectID = ?
         ORDER BY CreatedDate

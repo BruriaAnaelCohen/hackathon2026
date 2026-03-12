@@ -16,7 +16,7 @@ st.markdown("---")
 
 # Navigation
 st.sidebar.title("Navigation")
-page = st.sidebar.radio("Go to", ["Home", "Create Project", "View Projects"])
+page = st.sidebar.radio("Go to", ["Home", "Project Management", "View Projects"])
 
 if page == "Home":
     st.markdown("""
@@ -28,7 +28,7 @@ if page == "Home":
     - Process data using AI models
     
     ### Getting Started
-    1. Go to **Create Project** to set up a new project
+    1. Go to **Project Management** to management your project
     2. Define your processes (categorization or enrichment)
     3. Run the AI processor
     
@@ -38,9 +38,9 @@ if page == "Home":
     - `ai_processor.py` - Run by project name
     """)
     
-elif page == "Create Project":
-    st.markdown("## Create New Project")
-    st.info("Create a new project to define your AI enrichment tasks.")
+elif page == "Project Management":
+    st.markdown("## Project Management")
+    st.info("Create new projects or add processes to existing projects.")
     
     # Import and run the project creation
     from pages import create_project

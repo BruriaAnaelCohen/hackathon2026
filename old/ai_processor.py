@@ -73,7 +73,7 @@ def get_processes(conn, project_id):
     
     cursor.execute("""
         SELECT ProcessID, ProcessType, TaskDescription, SourceColumn, 
-               SourceColumnDescription, AdditionalColumns, ExpectedOutput, MaxCategories
+               SourceColumnDescription, AdditionalColumns, MaxCategories
         FROM AI_Processes 
         WHERE ProjectID = ?
         ORDER BY CreatedDate
@@ -290,7 +290,7 @@ def process_project(project):
         
         # Process each process
         for proc in processes:
-            process_id, process_type, task_desc, source_col, source_desc, add_cols_json, expected_out, max_cats = proc
+            process_id, process_type, task_desc, source_col, source_desc, add_cols_json, max_cats = proc
             
             print(f"\n--- Process: {process_type} ---")
             print(f"Task: {task_desc}")
@@ -329,7 +329,7 @@ def process_project(project):
                 if process_type == 'Categorize':
                     result = categorize_value(source_value, categories, task_desc)
                 else:
-                    result = enrich_value(values_dict, task_desc, expected_out)
+                    result = enrich_value(values_dict, task_desc, None)
                 
                 # Update database
                 if result:

@@ -19,12 +19,7 @@ conn_string = f'DRIVER={{SQL Server}};SERVER={SERVER};DATABASE={DATABASE};Truste
 # Ollama settings
 OLLAMA_BASE_URL = "http://localhost:11434"
 
-# Available models - uncomment the one you want to use:
-# MODEL_NAME = "llama3"          # Fast, good quality
-# MODEL_NAME = "mistral"        # Smaller, faster
-# MODEL_NAME = "phi3"           # Very small, fastest
-# MODEL_NAME = "llama2"         # Older version
-MODEL_NAME = "llama3"  # Currently using
+MODEL_NAME = "llama3" 
 
 
 def connect_to_database():
@@ -38,31 +33,31 @@ def connect_to_database():
         return None
 
 
-def check_ollama():
-    """Check if Ollama is running and available models"""
-    print("Checking Ollama connection...")
-    try:
-        # First check if server is running
-        req = urllib.request.Request(f"{OLLAMA_BASE_URL}/")
-        with urllib.request.urlopen(req, timeout=10) as response:
-            print(f"Ollama server responded: {response.status}")
-    except Exception as e:
-        print(f"Cannot connect to Ollama server: {e}")
-        print("Make sure Ollama is running (run 'ollama serve' in terminal)")
-        return False
+# def check_ollama():
+#     """Check if Ollama is running and available models"""
+#     print("Checking Ollama connection...")
+#     try:
+#         # First check if server is running
+#         req = urllib.request.Request(f"{OLLAMA_BASE_URL}/")
+#         with urllib.request.urlopen(req, timeout=10) as response:
+#             print(f"Ollama server responded: {response.status}")
+#     except Exception as e:
+#         print(f"Cannot connect to Ollama server: {e}")
+#         print("Make sure Ollama is running (run 'ollama serve' in terminal)")
+#         return False
     
-    try:
-        # Then check available models
-        req = urllib.request.Request(f"{OLLAMA_BASE_URL}/api/tags")
-        with urllib.request.urlopen(req, timeout=30) as response:
-            models = json.loads(response.read().decode('utf-8'))
-            print("Available Ollama models:")
-            for m in models.get('models', []):
-                print(f"  - {m.get('name', 'Unknown')}")
-            return True
-    except Exception as e:
-        print(f"Error getting models: {e}")
-        return False
+#     try:
+#         # Then check available models
+#         req = urllib.request.Request(f"{OLLAMA_BASE_URL}/api/tags")
+#         with urllib.request.urlopen(req, timeout=30) as response:
+#             models = json.loads(response.read().decode('utf-8'))
+#             print("Available Ollama models:")
+#             for m in models.get('models', []):
+#                 print(f"  - {m.get('name', 'Unknown')}")
+#             return True
+#     except Exception as e:
+#         print(f"Error getting models: {e}")
+#         return False
 
 
 def check_ollama_llama3():
